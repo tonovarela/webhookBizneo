@@ -1,0 +1,34 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model BitacoraPersonal {
+  id_bitacora    Int       @id(map: "PK_BitacoraPersonal") @default(autoincrement())
+  personal       String    @db.VarChar(50)
+  id_bizneo      String?   @db.VarChar(50)
+  fecha_registro DateTime? @default(now(), map: "DF_Personal_fecha_registro") @db.DateTime
+  action         String    @db.VarChar(10)
+  procesado      Boolean?  @default(false, map: "DF_BitacoraPersonal_procesado")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model Departamento {
+  id_departamento Int     @id(map: "PK_Departamento") @default(autoincrement())
+  id_depBizneo    String? @db.VarChar(50)
+  nombre          String  @db.VarChar(50)
+}
+
+model sysdiagrams {
+  name         String @db.NVarChar(128)
+  principal_id Int
+  diagram_id   Int    @id(map: "PK__sysdiagr__C2B05B61328612D2") @default(autoincrement())
+  version      Int?
+  definition   Bytes?
+  @@unique([principal_id, name], map: "UK_principal_name")
+  @@ignore
+}
