@@ -1,10 +1,10 @@
-import { AxiosError } from 'axios'
+
+import { Request, Response } from 'express'
 import { Bizneo } from '../../infrastructure/datasource/bizneo'
 import { ColaboradorService } from '../../services/colaborador.service'
 import { AbstractController } from '../abstract/controller.abstact'
-import { Request, Response } from 'express'
-import { ColaboradorAlta } from '../../domain/use-cases/colaborador/colabotador-alta';
-import { ColaboradorActualizar } from '../../domain/use-cases/colaborador/colaborador-actualizar';
+import { ColaboradorActualizar, ColaboradorAlta } from '../../domain/use-cases/colaborador'
+
 
 export class ColaboradorContoller extends AbstractController {
     constructor(

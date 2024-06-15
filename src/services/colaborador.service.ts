@@ -1,4 +1,4 @@
-import { PrismaClient, Prisma } from '@prisma/client'
+import { PrismaClient } from '@prisma/client'
 import { ColaboradorIntelisis } from "../domain/interfaces/entities/colaborador-intelisis.entity";
 
 
