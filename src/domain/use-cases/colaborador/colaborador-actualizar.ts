@@ -9,12 +9,19 @@ interface ColaboradorActualizarUseCase {
 
 export class ColaboradorActualizar implements ColaboradorActualizarUseCase {
     constructor(private readonly colaboradorService: ColaboradorService, private readonly bizneoClient: Bizneo) { }
+   
+   
     async execute(colaboradores: BitacoraPersonal[]): Promise<ColaboradorResult[]> {
         let result: ColaboradorResult[] = [];
         for (const colaborador of colaboradores) {
-            const res = await this.actualizarColaborador(colaborador)            
-            if (res.procesado){
-                await this.colaboradorService.actualizarIDBizneo(res.usuario.id, colaborador.id_bitacora!);
+            const res = await this.actualizarColaborador(colaborador)
+            
+            if (res.procesado) {
+                const idBizneo = res.usuario.id;
+                const salario = res.sdi ?? 0;
+                const id_bitacora = colaborador.id_bitacora!;                
+                await this.colaboradorService.actualizarIDBizneo(idBizneo,id_bitacora);
+               await this.sincronizarSalario(idBizneo, salario);
             }
             result.push(res)
         }
@@ -23,12 +30,14 @@ export class ColaboradorActualizar implements ColaboradorActualizarUseCase {
 
     private async actualizarColaborador(colaborador: BitacoraPersonal): Promise<ColaboradorResult> {
         const { personal, id_bizneo } = colaborador
+        console.log(id_bizneo);
         const resp = await this.bizneoClient.obtenerPersonalPorID(id_bizneo!)
         const { user } = resp
         if (user === null) {
             return {
                 personal,
                 usuario: null,
+                sdi: 0,
                 mensaje: 'No existe en Bizneo',
                 procesado: false,
             }
@@ -38,6 +47,7 @@ export class ColaboradorActualizar implements ColaboradorActualizarUseCase {
             return {
                 personal,
                 usuario: user,
+                sdi: 0,
                 mensaje: 'No existe en Intelisis',
                 procesado: false,
             }
@@ -45,12 +55,12 @@ export class ColaboradorActualizar implements ColaboradorActualizarUseCase {
         const res = await this.bizneoClient.actualizarPerfil(id_bizneo!, {
             first_name: p.Nombre,
             last_name: `${p.ApellidoPaterno} ${p.ApellidoMaterno}`,
-            external_id: p.Personal,
-            pin: p.Personal, 
-            numero_de_empleado: p.Personal, 
+            external_id: p.Personal.trim(),
+            pin: p.Personal.trim(),
+            numero_de_empleado: p.Personal.trim(),
             email: p.eMail,
             "Codigo Postal": p.CodigoPostal,
-            "Alcaldia o Municipio":p.Delegacion,
+            "Alcaldia o Municipio": p.Delegacion,
             "Calle y No": p.Direccion,
             Colonia: p.Colonia,
             Ciudad: p.Poblacion,
@@ -59,17 +69,33 @@ export class ColaboradorActualizar implements ColaboradorActualizarUseCase {
             curp: p.Registro,
             email_personal: p.eMail,
             gender: p.Sexo,
-        
         });
-
         return {
             personal,
+            sdi: p.SDI,
             usuario: user,
             procesado: res.procesado,
             mensaje: res.mensaje
         }
+    }
 
-
+    private async sincronizarSalario(idBizneo: number, sdi: number) {
+        
+        const salarios = await this.bizneoClient.obtenerSalarios(idBizneo);                
+        let newSDI =sdi*30;        
+        if (salarios.length == 0) {
+            await this.bizneoClient.registrarSalario(idBizneo, newSDI );
+            return;
+        }        
+        const salariosPorIdDesc = salarios.sort((a,b)=>b.id-a.id);
+        const {amount,id} = salariosPorIdDesc.at(0)!;                
+        const esIgual = (amount.amount)  == newSDI.toString();                        
+        if (!esIgual) {
+            await this.bizneoClient.registrarSalario(idBizneo, newSDI);
+            await this.bizneoClient.inHabilitarSalario(idBizneo, id);           
+        }
+        
+        
 
 
     }

@@ -22,5 +22,6 @@ export interface ColaboradorIntelisis {
     Sexo:string;
     EstadoCivil:string;
     Contrasena:string;
+    SDI:number;
 
 }

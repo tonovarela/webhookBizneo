@@ -3,5 +3,6 @@ export interface ColaboradorResult {
     usuario: any;
     mensaje: string;
     procesado?: boolean;
+    sdi?: number;
 
 }

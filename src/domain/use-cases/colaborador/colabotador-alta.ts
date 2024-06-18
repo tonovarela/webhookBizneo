@@ -2,14 +2,15 @@ import { BitacoraPersonal, Departamento } from '@prisma/client';
 import { Bizneo } from "../../../infrastructure/datasource/bizneo"
 import { ColaboradorService } from "../../../services/colaborador.service"
 import { ColaboradorResult } from '../../interfaces/bizneo/colaborador-result';
+import { AbstractColaboradorUseCase } from './AbstractColaborador';
 
 
-interface ColaboradorAltaUseCase {
-    execute(colaboradores: BitacoraPersonal[]): Promise<ColaboradorResult[]>
-}
 
-export class ColaboradorAlta implements ColaboradorAltaUseCase {
-    constructor(private readonly colaboradorService: ColaboradorService, private readonly bizneoClient: Bizneo) { }
+export class ColaboradorAlta  extends AbstractColaboradorUseCase {
+    constructor( readonly colaboradorService: ColaboradorService,  readonly bizneoClient: Bizneo) {
+        super(colaboradorService, bizneoClient);
+     }
+    
     async execute(colaboradores: BitacoraPersonal[]): Promise<ColaboradorResult[]> {
         let resultado = []
         for (const colaborador of colaboradores) {
@@ -19,12 +20,16 @@ export class ColaboradorAlta implements ColaboradorAltaUseCase {
                 await this.colaboradorService.actualizarIDBizneo(idBizneo, colaborador.id_bitacora)
                 await this.colaboradorService.actualizarIDBizneoIntelisis(idBizneo, colaborador.personal)
                 await this.asociarDepartamento(idBizneo, colaborador.personal);
+                await this.sincronizarEstatus(colaborador);
+                
             }
             resultado.push(res)
 
         }
         return resultado
     }
+
+
     private asociarDepartamento = async (id_personalBizneo: string, personal: string) => {
         const { Departamento } = await this.colaboradorService.detalleIntelisis(personal);
         if (Departamento != null) {
@@ -33,13 +38,12 @@ export class ColaboradorAlta implements ColaboradorAltaUseCase {
         }
     }
 
-
-
     private async procesarColaboradoresPendientes(colaborador: BitacoraPersonal): Promise<ColaboradorResult> {
         const { personal } = colaborador
-        const resp = await this.bizneoClient.obtenerPersonal(personal)
+        const resp = await this.bizneoClient.obtenerPersonal(personal)        
         if (resp.pagination.total_entries != 0) {
             const [user] = resp.users
+            
             return {
                 personal,
                 usuario: user,
@@ -65,6 +69,7 @@ export class ColaboradorAlta implements ColaboradorAltaUseCase {
             },
         }
         const { user, mensaje } = await this.bizneoClient.crearPersonal(nuevoUsuario)
+        
         if (user == null) {
             return {
                 personal,
