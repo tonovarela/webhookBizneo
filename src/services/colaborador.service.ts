@@ -50,6 +50,11 @@ return     await this.prismaClient.$queryRawUnsafe(
     return deps;
   }
 
+  insertarBitacora = async (personal: string,action: string,id_bizneo?:string ) => {
+    return this.prismaClient.bitacoraPersonal.create({ data: { personal, action,id_bizneo } });
+  }
+
+
 
 
 }

@@ -75,7 +75,7 @@ export class Bizneo {
   };
 
 
-  asociarDepartamento = async (id_personalBizneo: string, id_departamentoBizneo: number) => {
+  asociarDepartamento = async (id_personalBizneo: number, id_departamentoBizneo: number) => {
     try {
       const body = {
         start_at: new Date().getFullYear() + "-01-01",

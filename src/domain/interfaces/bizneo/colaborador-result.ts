@@ -1,6 +1,6 @@
 export interface ColaboradorResult {
     personal: string;
-    usuario: any;
+    id_bizneo?: number;
     mensaje: string;
     procesado?: boolean;
     sdi?: number;

@@ -2,26 +2,24 @@ import { BitacoraPersonal } from "@prisma/client";
 import { ColaboradorResult } from "../../interfaces/bizneo/colaborador-result";
 import { ColaboradorService } from "../../../services/colaborador.service";
 import { Bizneo } from "../../../infrastructure/datasource/bizneo";
+import { AbstractColaboradorUseCase } from "./AbstractColaborador";
 
-interface ColaboradorActualizarUseCase {
-    execute(colaboradores: BitacoraPersonal[]): Promise<ColaboradorResult[]>
-}
 
-export class ColaboradorActualizar implements ColaboradorActualizarUseCase {
-    constructor(private readonly colaboradorService: ColaboradorService, private readonly bizneoClient: Bizneo) { }
-   
-   
+export class ColaboradorActualizar extends AbstractColaboradorUseCase {
+
+    constructor(readonly colaboradorService: ColaboradorService, readonly bizneoClient: Bizneo) { super(colaboradorService, bizneoClient); }
+
+
     async execute(colaboradores: BitacoraPersonal[]): Promise<ColaboradorResult[]> {
         let result: ColaboradorResult[] = [];
         for (const colaborador of colaboradores) {
             const res = await this.actualizarColaborador(colaborador)
-            
             if (res.procesado) {
-                const idBizneo = res.usuario.id;
+                const idBizneo = Number(colaborador.id_bizneo) ?? 0;
                 const salario = res.sdi ?? 0;
-                const id_bitacora = colaborador.id_bitacora!;                
-                await this.colaboradorService.actualizarIDBizneo(idBizneo,id_bitacora);
-               await this.sincronizarSalario(idBizneo, salario);
+                const id_bitacora = colaborador.id_bitacora!;
+                await this.colaboradorService.actualizarIDBizneo(idBizneo, id_bitacora);
+                await this.sincronizarSalario(idBizneo, salario);
             }
             result.push(res)
         }
@@ -30,23 +28,23 @@ export class ColaboradorActualizar implements ColaboradorActualizarUseCase {
 
     private async actualizarColaborador(colaborador: BitacoraPersonal): Promise<ColaboradorResult> {
         const { personal, id_bizneo } = colaborador
-        console.log(id_bizneo);
         const resp = await this.bizneoClient.obtenerPersonalPorID(id_bizneo!)
         const { user } = resp
         if (user === null) {
             return {
                 personal,
-                usuario: null,
+                id_bizneo: undefined,
                 sdi: 0,
                 mensaje: 'No existe en Bizneo',
                 procesado: false,
+
             }
         }
         const p = await this.colaboradorService.detalleIntelisis(personal);
         if (p === null) {
             return {
                 personal,
-                usuario: user,
+                id_bizneo:undefined,
                 sdi: 0,
                 mensaje: 'No existe en Intelisis',
                 procesado: false,
@@ -71,31 +69,31 @@ export class ColaboradorActualizar implements ColaboradorActualizarUseCase {
             gender: p.Sexo,
         });
         return {
-            personal,
+            personal,            
             sdi: p.SDI,
-            usuario: user,
+            id_bizneo: +id_bizneo!,
             procesado: res.procesado,
             mensaje: res.mensaje
         }
     }
 
     private async sincronizarSalario(idBizneo: number, sdi: number) {
-        
-        const salarios = await this.bizneoClient.obtenerSalarios(idBizneo);                
-        let newSDI =sdi*30;        
+
+        const salarios = await this.bizneoClient.obtenerSalarios(idBizneo);
+        let newSDI = sdi * 30;
         if (salarios.length == 0) {
-            await this.bizneoClient.registrarSalario(idBizneo, newSDI );
+            await this.bizneoClient.registrarSalario(idBizneo, newSDI);
             return;
-        }        
-        const salariosPorIdDesc = salarios.sort((a,b)=>b.id-a.id);
-        const {amount,id} = salariosPorIdDesc.at(0)!;                
-        const esIgual = (amount.amount)  == newSDI.toString();                        
+        }
+        const salariosPorIdDesc = salarios.sort((a, b) => b.id - a.id);
+        const { amount, id } = salariosPorIdDesc.at(0)!;
+        const esIgual = (amount.amount) == newSDI.toString();
         if (!esIgual) {
             await this.bizneoClient.registrarSalario(idBizneo, newSDI);
-            await this.bizneoClient.inHabilitarSalario(idBizneo, id);           
+            await this.bizneoClient.inHabilitarSalario(idBizneo, id);
         }
-        
-        
+
+
 
 
     }

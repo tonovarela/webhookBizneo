@@ -16,12 +16,11 @@ export class ColaboradorAlta  extends AbstractColaboradorUseCase {
         for (const colaborador of colaboradores) {
             const res = await this.procesarColaboradoresPendientes(colaborador)
             if (res.procesado) {
-                const { id: idBizneo } = res.usuario
+                const idBizneo = res.id_bizneo ?? 0;
                 await this.colaboradorService.actualizarIDBizneo(idBizneo, colaborador.id_bitacora)
                 await this.colaboradorService.actualizarIDBizneoIntelisis(idBizneo, colaborador.personal)
                 await this.asociarDepartamento(idBizneo, colaborador.personal);
-                await this.sincronizarEstatus(colaborador);
-                
+                await this.sincronizarEstatus(colaborador);                
             }
             resultado.push(res)
 
@@ -30,7 +29,7 @@ export class ColaboradorAlta  extends AbstractColaboradorUseCase {
     }
 
 
-    private asociarDepartamento = async (id_personalBizneo: string, personal: string) => {
+    private asociarDepartamento = async (id_personalBizneo: number, personal: string) => {
         const { Departamento } = await this.colaboradorService.detalleIntelisis(personal);
         if (Departamento != null) {
             const { id_departamento } = await this.colaboradorService.obtenerDepartamento(Departamento);
@@ -46,7 +45,7 @@ export class ColaboradorAlta  extends AbstractColaboradorUseCase {
             
             return {
                 personal,
-                usuario: user,
+                id_bizneo: user.id,                
                 mensaje: 'Ya existe en Bizneo',
                 procesado: true,
             };
@@ -55,7 +54,7 @@ export class ColaboradorAlta  extends AbstractColaboradorUseCase {
         if (personalPendiente == null) {
             return {
                 personal,
-                usuario: null,
+                id_bizneo: undefined,                
                 mensaje: 'No se encuentra registrado en Intelisis',
                 procesado: false,
 
@@ -73,14 +72,14 @@ export class ColaboradorAlta  extends AbstractColaboradorUseCase {
         if (user == null) {
             return {
                 personal,
-                usuario: nuevoUsuario,
+                id_bizneo: undefined,                
                 mensaje: JSON.stringify(mensaje),
                 procesado: false,
             }
         }
         return {
             personal,
-            usuario: user,
+            id_bizneo:user.id,
             mensaje: 'Registrado en Bizneo',
             procesado: true,
         };

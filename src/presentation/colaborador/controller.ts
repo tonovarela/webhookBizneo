@@ -17,10 +17,16 @@ export class ColaboradorContoller extends AbstractController {
         const resp = await colaboradorAltaUseCase.execute(colaboradoresPendientes);
         return res.json({registrados: resp})
     }
-    actualizar = async (_: Request, res: Response) => {
-        const colaboradoresPendientes = await this.colaboradorService.obtenerPorProcesar("Actualizar");
+    actualizar = async (req: Request, res: Response) => {        
+        const {personal,usuario,action} = req.query;
+        if (personal!==undefined){            
+            await this.colaboradorService.insertarBitacora(personal as string,action as string,usuario as string);                        
+            //return res.json({mensaje:"Registro insertado"})
+        }         
+        
+        const colaboradoresPendientes = await this.colaboradorService.obtenerPorProcesar("Actualizar");        
         const colaboradorActualizarUseCase = new ColaboradorActualizar(this.colaboradorService, this.bizneoClient);
-        const resp = await colaboradorActualizarUseCase.execute(colaboradoresPendientes);        
+        const resp = await colaboradorActualizarUseCase.execute(colaboradoresPendientes);                
         return res.json( {actualizados:resp})
     }
 

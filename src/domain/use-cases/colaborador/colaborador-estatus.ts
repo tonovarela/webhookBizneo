@@ -17,7 +17,7 @@ export class ColaboradorEstatus extends AbstractColaboradorUseCase {
         for (const colaborador of colaboradores) {
             const res = await this.sincronizarEstatus(colaborador);
             if (res.procesado) {
-                const idBizneo = res.usuario.id;
+                const idBizneo = Number(colaborador.id_bizneo) ?? 0;
                 const id_bitacora = colaborador.id_bitacora!;
                 await this.colaboradorService.actualizarIDBizneo(idBizneo,id_bitacora);
             }
