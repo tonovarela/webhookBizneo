@@ -16,7 +16,7 @@ export class ColaboradorActualizar extends AbstractColaboradorUseCase {
             const res = await this.actualizarColaborador(colaborador)
             if (res.procesado) {
                 const idBizneo = Number(colaborador.id_bizneo) ?? 0;
-                const salario = res.sdi ?? 0;
+                const salario = res.sueldo ?? 0;
                 const id_bitacora = colaborador.id_bitacora!;
                 await this.colaboradorService.actualizarIDBizneo(idBizneo, id_bitacora);
                 await this.sincronizarSalario(idBizneo, salario);
@@ -27,14 +27,17 @@ export class ColaboradorActualizar extends AbstractColaboradorUseCase {
     }
 
     private async actualizarColaborador(colaborador: BitacoraPersonal): Promise<ColaboradorResult> {
-        const { personal, id_bizneo } = colaborador
-        const resp = await this.bizneoClient.obtenerPersonalPorID(id_bizneo!)
+        const { personal, id_bizneo } = colaborador;
+        let _id_bizneo = id_bizneo;
+        
+        
+        const resp = await this.bizneoClient.obtenerPersonalPorID(_id_bizneo!)        
         const { user } = resp
         if (user === null) {
             return {
                 personal,
                 id_bizneo: undefined,
-                sdi: 0,
+                sueldo: 0,
                 mensaje: 'No existe en Bizneo',
                 procesado: false,
 
@@ -45,12 +48,12 @@ export class ColaboradorActualizar extends AbstractColaboradorUseCase {
             return {
                 personal,
                 id_bizneo:undefined,
-                sdi: 0,
+                sueldo: 0,
                 mensaje: 'No existe en Intelisis',
                 procesado: false,
             }
         }
-        const res = await this.bizneoClient.actualizarPerfil(id_bizneo!, {
+        const res = await this.bizneoClient.actualizarPerfil(_id_bizneo!, {
             first_name: p.Nombre,
             last_name: `${p.ApellidoPaterno} ${p.ApellidoMaterno}`,
             external_id: p.Personal.trim(),
@@ -70,8 +73,8 @@ export class ColaboradorActualizar extends AbstractColaboradorUseCase {
         });
         return {
             personal,            
-            sdi: p.SDI,
-            id_bizneo: +id_bizneo!,
+            sueldo: p.SueldoDiario,
+            id_bizneo: +_id_bizneo!,
             procesado: res.procesado,
             mensaje: res.mensaje
         }

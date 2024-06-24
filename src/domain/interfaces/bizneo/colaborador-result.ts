@@ -3,6 +3,6 @@ export interface ColaboradorResult {
     id_bizneo?: number;
     mensaje: string;
     procesado?: boolean;
-    sdi?: number;
+    sueldo?: number;
 
 }
