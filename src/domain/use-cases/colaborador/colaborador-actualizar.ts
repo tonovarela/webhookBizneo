@@ -28,10 +28,8 @@ export class ColaboradorActualizar extends AbstractColaboradorUseCase {
 
     private async actualizarColaborador(colaborador: BitacoraPersonal): Promise<ColaboradorResult> {
         const { personal, id_bizneo } = colaborador;
-        let _id_bizneo = id_bizneo;
-        
-        
-        const resp = await this.bizneoClient.obtenerPersonalPorID(_id_bizneo!)        
+                
+        const resp = await this.bizneoClient.obtenerPersonalPorID(id_bizneo!)        
         const { user } = resp
         if (user === null) {
             return {
@@ -43,8 +41,8 @@ export class ColaboradorActualizar extends AbstractColaboradorUseCase {
 
             }
         }
-        const p = await this.colaboradorService.detalleIntelisis(personal);
-        if (p === null) {
+        const personalDB = await this.colaboradorService.detalleIntelisis(personal);
+        if (personalDB === null) {
             return {
                 personal,
                 id_bizneo:undefined,
@@ -53,30 +51,39 @@ export class ColaboradorActualizar extends AbstractColaboradorUseCase {
                 procesado: false,
             }
         }
-        const res = await this.bizneoClient.actualizarPerfil(_id_bizneo!, {
-            first_name: p.Nombre,
-            last_name: `${p.ApellidoPaterno} ${p.ApellidoMaterno}`,
-            external_id: p.Personal.trim(),
-            pin: p.Personal.trim(),
-            numero_de_empleado: p.Personal.trim(),
-            email: p.eMail,
-            "Codigo Postal": p.CodigoPostal,
-            "Alcaldia o Municipio": p.Delegacion,
-            "Calle y No": p.Direccion,
-            Colonia: p.Colonia,
-            Ciudad: p.Poblacion,
-            Estado: p.Estado,
-            birthday: p.FechaNacimiento.toISOString().split('T')[0],
-            curp: p.Registro,
-            email_personal: p.eMail,
-            gender: p.Sexo,
+
+       
+       const access =personalDB.Estatus.trim()=="ALTA"?'enabled':'revoked';  
+       const id_personal =personalDB.Personal.trim();
+       const id_bizneoNumber =Number(id_bizneo) ?? 0;       
+       await this.sincronizarEstatus(id_personal,id_bizneoNumber,access);
+
+        const res = await this.bizneoClient.actualizarPerfil(id_bizneo!, {
+            first_name: personalDB.Nombre,
+            last_name: `${personalDB.ApellidoPaterno} ${personalDB.ApellidoMaterno}`,
+            external_id: id_personal,
+            pin: personalDB.Personal.trim(),
+            numero_de_empleado:id_personal,
+            email: personalDB.eMail,
+            "Codigo Postal": personalDB.CodigoPostal,
+            "Alcaldia o Municipio": personalDB.Delegacion,
+            "Calle y No": personalDB.Direccion,
+            Colonia: personalDB.Colonia,
+            Ciudad: personalDB.Poblacion,
+            Estado: personalDB.Estado,
+            birthday: personalDB.FechaNacimiento.toISOString().split('T')[0],
+            curp: personalDB.Registro,
+            email_personal: personalDB.eMail,
+            gender: personalDB.Sexo,
+            access
+                
         });
         return {
-            personal,            
-            sueldo: p.SueldoDiario,
-            id_bizneo: +_id_bizneo!,
+            personal,   
+            sueldo: personalDB.SueldoDiario,                                 
+            id_bizneo: id_bizneoNumber,
             procesado: res.procesado,
-            mensaje: res.mensaje
+            mensaje: access=='enabled'?`${res.mensaje} con el estatus`:"Personal dado de baja en Bizneo"
         }
     }
 
