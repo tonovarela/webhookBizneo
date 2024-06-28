@@ -17,15 +17,13 @@ export class ColaboradorAlta  extends AbstractColaboradorUseCase {
             const res = await this.procesarColaboradoresPendientes(colaborador)
             if (res.procesado) {
                 const idBizneo = res.id_bizneo ?? 0;
-                await this.colaboradorService.actualizarIDBizneo(idBizneo, colaborador.id_bitacora)
-                await this.colaboradorService.actualizarIDBizneoIntelisis(idBizneo, colaborador.personal)
-                await this.asociarDepartamento(idBizneo, colaborador.personal);
-                await this.sincronizarEstatus(colaborador);                
+                await this.colaboradorService.procesarBitacora(colaborador.id_bitacora);
+                await this.colaboradorService.insertOrCreateUserBizneo(idBizneo, colaborador.personal);                
+                await this.asociarDepartamento(idBizneo, colaborador.personal);                
             }
             resultado.push(res)
-
         }
-        return resultado
+        return resultado;
     }
 
 

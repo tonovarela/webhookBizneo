@@ -1,5 +1,5 @@
 import { BitacoraPersonal } from "@prisma/client"
-import { ColaboradorResult, Contrato, User } from "../../interfaces/bizneo"
+import { ColaboradorResult, Contrato } from "../../interfaces/bizneo"
 import { ColaboradorService } from "../../../services/colaborador.service";
 import { Bizneo } from "../../../infrastructure/datasource/bizneo";
 
@@ -16,53 +16,6 @@ export abstract class AbstractColaboradorUseCase {
         }
     }
 
-    // protected async sincronizarEstatus(colaborador: BitacoraPersonal): Promise<ColaboradorResult> {
-    //     const personalDB = await this.colaboradorService.detalleIntelisis(colaborador.personal);
-    //     const personalBizneo = await this.bizneoClient.obtenerPersonal(colaborador.personal);
-    //     if (personalDB === undefined || personalBizneo === undefined) {
-    //         return {
-    //             personal: colaborador.personal,
-    //             id_bizneo: undefined,
-    //             mensaje: 'No se encuentra registrado en Intelisis',
-    //             procesado: false,
-    //         };
-    //     }
-    //     const usuario = personalBizneo.users[0];
-
-    //     const { Estatus, FechaAntiguedad } = personalDB;
-    //     const estatus = Estatus.trim();
-    //     const bizneoID = usuario.id;
-    //     const contratos = await this.bizneoClient.listarContratos(bizneoID);
-    //     if (estatus === "ALTA") {
-    //         await this.eliminarContratos(bizneoID, contratos);
-    //         await this.bizneoClient.actualizarPerfil(`${bizneoID}`, { ...usuario, access: 'enabled' });
-    //         const { mensaje, procesado } = await this.bizneoClient.registrarContrato(bizneoID, FechaAntiguedad);
-    //         return {
-    //             personal: personalDB.Personal,
-    //             id_bizneo: usuario.id,
-    //             mensaje: mensaje,
-    //             procesado,
-    //         };
-
-    //     }
-    //     if (estatus === "BAJA") {
-    //         await this.eliminarContratos(bizneoID, contratos);
-    //         await this.bizneoClient.actualizarPerfil(`${usuario.id}`, { ...usuario, access: 'revoked' });
-    //         return {
-    //             personal: colaborador.personal,
-    //             id_bizneo: usuario.id,
-    //             mensaje: 'Personal dado de baja en Intelisis',
-    //             procesado: true,
-    //         };
-
-    //     }
-    //     return {
-    //         personal: colaborador.personal,
-    //         id_bizneo: usuario.id,
-    //         mensaje: `Estatus ${personalDB.Estatus} no reconocido `,
-    //         procesado: false,
-    //     };
-    // }
 
 
     protected async sincronizarEstatus(id_personal: string, id_bizneo:number, acceso: 'enabled' | 'revoked') {

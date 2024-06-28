@@ -9,86 +9,80 @@ export class ColaboradorActualizar extends AbstractColaboradorUseCase {
 
     constructor(readonly colaboradorService: ColaboradorService, readonly bizneoClient: Bizneo) { super(colaboradorService, bizneoClient); }
 
-
     async execute(colaboradores: BitacoraPersonal[]): Promise<ColaboradorResult[]> {
         let result: ColaboradorResult[] = [];
         for (const colaborador of colaboradores) {
-            const res = await this.actualizarColaborador(colaborador)
-            if (res.procesado) {
-                const idBizneo = Number(colaborador.id_bizneo) ?? 0;
-                const salario = res.sueldo ?? 0;
-                const id_bitacora = colaborador.id_bitacora!;
-                await this.colaboradorService.actualizarIDBizneo(idBizneo, id_bitacora);
-                await this.sincronizarSalario(idBizneo, salario);
+            const personalBizneo = await this.colaboradorService.obtenerIdPersonalBizneo(colaborador.personal.trim());
+            if (personalBizneo != null) {
+                const {id_bizneo} = personalBizneo;
+                const res = await this.actualizarColaborador(id_bizneo)
+                if (res.procesado) {
+                    const idBizneo = Number(id_bizneo) ?? 0;
+                    const salario = res.sueldo ?? 0;
+                    const id_bitacora = colaborador.id_bitacora!;
+                    await this.colaboradorService.procesarBitacora(id_bitacora);
+                    await this.sincronizarSalario(idBizneo, salario);
+                }
+                result.push(res)
             }
-            result.push(res)
         }
         return result;
     }
-
-    private async actualizarColaborador(colaborador: BitacoraPersonal): Promise<ColaboradorResult> {
-        const { personal, id_bizneo } = colaborador;
-                
-        const resp = await this.bizneoClient.obtenerPersonalPorID(id_bizneo!)        
-        const { user } = resp
+    private async actualizarColaborador(id_bizneo: string): Promise<ColaboradorResult> {        
+        const personalBizneo = await this.bizneoClient.obtenerPersonalPorID(id_bizneo!)
+        const { user } = personalBizneo;
         if (user === null) {
             return {
-                personal,
+                personal: '',
                 id_bizneo: undefined,
                 sueldo: 0,
                 mensaje: 'No existe en Bizneo',
-                procesado: false,
-
+                procesado: false
             }
         }
-        const personalDB = await this.colaboradorService.detalleIntelisis(personal);
-        if (personalDB === null) {
+        const numeroPersonal = user.external_id;
+        const personalDBIntelisis = await this.colaboradorService.detalleIntelisis(numeroPersonal);
+        if (personalDBIntelisis === null) {
             return {
-                personal,
-                id_bizneo:undefined,
+                personal: numeroPersonal,
+                id_bizneo: undefined,
                 sueldo: 0,
                 mensaje: 'No existe en Intelisis',
                 procesado: false,
             }
         }
-
-       
-       const access =personalDB.Estatus.trim()=="ALTA"?'enabled':'revoked';  
-       const id_personal =personalDB.Personal.trim();
-       const id_bizneoNumber =Number(id_bizneo) ?? 0;       
-       await this.sincronizarEstatus(id_personal,id_bizneoNumber,access);
-
+        const access = personalDBIntelisis.Estatus.trim() == "ALTA" ? 'enabled' : 'revoked';        
+        const id_bizneoNumber = Number(id_bizneo) ?? 0;
+        await this.sincronizarEstatus(numeroPersonal, id_bizneoNumber, access);
         const res = await this.bizneoClient.actualizarPerfil(id_bizneo!, {
-            first_name: personalDB.Nombre,
-            last_name: `${personalDB.ApellidoPaterno} ${personalDB.ApellidoMaterno}`,
-            external_id: id_personal,
-            pin: personalDB.Personal.trim(),
-            numero_de_empleado:id_personal,
-            email: personalDB.eMail,
-            "Codigo Postal": personalDB.CodigoPostal,
-            "Alcaldia o Municipio": personalDB.Delegacion,
-            "Calle y No": personalDB.Direccion,
-            Colonia: personalDB.Colonia,
-            Ciudad: personalDB.Poblacion,
-            Estado: personalDB.Estado,
-            birthday: personalDB.FechaNacimiento.toISOString().split('T')[0],
-            curp: personalDB.Registro,
-            email_personal: personalDB.eMail,
-            gender: personalDB.Sexo,
+            first_name: personalDBIntelisis.Nombre,
+            last_name: `${personalDBIntelisis.ApellidoPaterno} ${personalDBIntelisis.ApellidoMaterno}`,
+            external_id: numeroPersonal,
+            pin: personalDBIntelisis.Personal.trim(),
+            numero_de_empleado: numeroPersonal,
+            email: personalDBIntelisis.eMail,
+            "Codigo Postal": personalDBIntelisis.CodigoPostal,
+            "Alcaldia o Municipio": personalDBIntelisis.Delegacion,
+            "Calle y No": personalDBIntelisis.Direccion,
+            Colonia: personalDBIntelisis.Colonia,
+            Ciudad: personalDBIntelisis.Poblacion,
+            Estado: personalDBIntelisis.Estado,
+            birthday: personalDBIntelisis.FechaNacimiento.toISOString().split('T')[0],
+            curp: personalDBIntelisis.Registro,
+            email_personal: personalDBIntelisis.eMail,
+            gender: personalDBIntelisis.Sexo,
             access
-                
         });
         return {
-            personal,   
-            sueldo: personalDB.SueldoDiario,                                 
+            personal: numeroPersonal,
+            sueldo: personalDBIntelisis.SueldoDiario,
             id_bizneo: id_bizneoNumber,
             procesado: res.procesado,
-            mensaje: access=='enabled'?`${res.mensaje} con el estatus`:"Personal dado de baja en Bizneo"
+            mensaje: access == 'enabled' ? `${res.mensaje}` : "Personal dado de baja en Bizneo"
         }
     }
 
     private async sincronizarSalario(idBizneo: number, sdi: number) {
-
         const salarios = await this.bizneoClient.obtenerSalarios(idBizneo);
         let newSDI = sdi * 30;
         if (salarios.length == 0) {
@@ -102,9 +96,5 @@ export class ColaboradorActualizar extends AbstractColaboradorUseCase {
             await this.bizneoClient.registrarSalario(idBizneo, newSDI);
             await this.bizneoClient.inHabilitarSalario(idBizneo, id);
         }
-
-
-
-
     }
 }

@@ -1,2 +1,2 @@
 export * from './colaborador-actualizar';
-export * from './colabotador-alta';
+export * from './colaborador-alta';

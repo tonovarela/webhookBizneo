@@ -10,7 +10,6 @@ datasource db {
 model BitacoraPersonal {
   id_bitacora    Int       @id(map: "PK_BitacoraPersonal") @default(autoincrement())
   personal       String    @db.VarChar(50)
-  id_bizneo      String?   @db.VarChar(50)
   fecha_registro DateTime? @default(now(), map: "DF_Personal_fecha_registro") @db.DateTime
   action         String    @db.VarChar(10)
   procesado      Boolean?  @default(false, map: "DF_BitacoraPersonal_procesado")
@@ -29,6 +28,12 @@ model sysdiagrams {
   diagram_id   Int    @id(map: "PK__sysdiagr__C2B05B61328612D2") @default(autoincrement())
   version      Int?
   definition   Bytes?
+
   @@unique([principal_id, name], map: "UK_principal_name")
   @@ignore
+}
+
+model PersonalBizneo {
+  personal  String @id(map: "PK_PersonalBizneo_1") @db.VarChar(50)
+  id_bizneo String @db.VarChar(50)
 }
