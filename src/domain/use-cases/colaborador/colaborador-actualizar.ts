@@ -16,7 +16,7 @@ export class ColaboradorActualizar extends AbstractColaboradorUseCase {
             if (personalBizneo != null) {
                 const {id_bizneo} = personalBizneo;
                 const res = await this.actualizarColaborador(id_bizneo)
-                if (res.procesado) {
+                if (res.se_procesa) {
                     const idBizneo = Number(id_bizneo) ?? 0;
                     const salario = res.sueldo ?? 0;
                     const id_bitacora = colaborador.id_bitacora!;
@@ -37,7 +37,7 @@ export class ColaboradorActualizar extends AbstractColaboradorUseCase {
                 id_bizneo: undefined,
                 sueldo: 0,
                 mensaje: 'No existe en Bizneo',
-                procesado: false
+                se_procesa: false
             }
         }
         const numeroPersonal = user.external_id;
@@ -48,7 +48,7 @@ export class ColaboradorActualizar extends AbstractColaboradorUseCase {
                 id_bizneo: undefined,
                 sueldo: 0,
                 mensaje: 'No existe en Intelisis',
-                procesado: false,
+                se_procesa: false,
             }
         }
         const access = personalDBIntelisis.Estatus.trim() == "ALTA" ? 'enabled' : 'revoked';        
@@ -77,7 +77,7 @@ export class ColaboradorActualizar extends AbstractColaboradorUseCase {
             personal: numeroPersonal,
             sueldo: personalDBIntelisis.SueldoDiario,
             id_bizneo: id_bizneoNumber,
-            procesado: res.procesado,
+            se_procesa: res.procesado,
             mensaje: access == 'enabled' ? `${res.mensaje}` : "Personal dado de baja en Bizneo"
         }
     }

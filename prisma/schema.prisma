@@ -37,3 +37,20 @@ model PersonalBizneo {
   personal  String @id(map: "PK_PersonalBizneo_1") @db.VarChar(50)
   id_bizneo String @db.VarChar(50)
 }
+
+model Checada {
+  id_checada String    @id(map: "PK_Checada") @default("newid()", map: "DF_Checada_id_checada") @db.VarChar(50)
+  id_evento  Int?
+  tipo       String?   @db.VarChar(50)
+  inicio     DateTime? @db.DateTime
+  fin        DateTime? @db.DateTime
+  Evento     Evento?   @relation(fields: [id_evento], references: [id_evento], onDelete: NoAction, onUpdate: NoAction, map: "FK_Checada_Registro")
+}
+
+model Evento {
+  id_evento      Int       @id(map: "PK_Registro")
+  personal       String?   @db.VarChar(50)
+  fecha_evento   DateTime? @db.Date
+  fecha_registro DateTime? @default(now(), map: "DF_Registro_fecha_registro") @db.DateTime
+  Checada        Checada[]
+}

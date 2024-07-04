@@ -1,5 +1,5 @@
 
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from '@prisma/client';
 import { ColaboradorIntelisis } from "../domain/interfaces/entities/colaborador-intelisis.entity";
 
 
@@ -11,6 +11,8 @@ export class ColaboradorService {
   }
 
   ejecutarTransaction = async () => {
+
+
     return await this.prismaClient.$queryRawUnsafe(
       ` Begin tran
      use ${this.dbIntelisis};
@@ -66,6 +68,23 @@ export class ColaboradorService {
 
   insertarBitacora = async (personal: string, action: string, id_bizneo?: string) => {
     return this.prismaClient.bitacoraPersonal.create({ data: { personal, action } });
+  }
+
+
+  registrarEvento = async (data: Prisma.EventoCreateInput) => {
+    return this.prismaClient.evento.create({ data });
+  }
+  obtenerEvento = async (id_evento: number) => {
+    return this.prismaClient.evento.findUnique({ where: { id_evento, }, include: { Checada: true } });
+  }
+
+  borrarEvento = async (id_evento: number) => {
+    await this.prismaClient.evento.update({
+      where: { id_evento },
+      data: { Checada: { deleteMany: {} } },
+      include: { Checada: true }
+    });
+    return this.prismaClient.evento.delete({ where: { id_evento } });
   }
 
 

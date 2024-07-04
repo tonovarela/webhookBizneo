@@ -15,6 +15,7 @@ export class ColaboradorRoutes {
         router.get('/', controller.revisionAlta);
         router.get('/alta', controller.revisionAlta);
         router.get('/cambios', controller.actualizar);
+        router.get('/asistencias', controller.revisionAsistencias);
         
         return router;
     }

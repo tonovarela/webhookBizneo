@@ -1,6 +1,7 @@
 
 import { ApiBizneo } from "../../config/bizneo.api";
 import { CreateUserRequest, Contrato, ResponseSalaries, ResponseUser, ResponseUserByFilter, User } from "../../domain/interfaces/bizneo";
+import { LoggedTimeElement, ResponseChecadas } from "../../domain/interfaces/bizneo/response-checadas.interface";
 
 
 export class Bizneo {
@@ -23,26 +24,26 @@ export class Bizneo {
    * @param id - The ID of the user.
    * @returns A Promise that resolves to an array of ResponseSalaries objects.
    */
-  obtenerSalarios = async (id:number) => {
+  obtenerSalarios = async (id: number) => {
     const { data } = await ApiBizneo.get<ResponseSalaries[]>(`/api/v1/users/${id}/salaries`);
     return data;
   };
 
-  inHabilitarSalario = async (id:number, idSalario:number) => {
-    const { data } = await ApiBizneo.put(`/api/v1/users/${id}/salaries/${idSalario}`,{
-      "end_at": new Date().toISOString().split('T')[0]      
+  inHabilitarSalario = async (id: number, idSalario: number) => {
+    const { data } = await ApiBizneo.put(`/api/v1/users/${id}/salaries/${idSalario}`, {
+      "end_at": new Date().toISOString().split('T')[0]
     });
     return data;
   }
 
-  registrarSalario = async (id:number, salario:number) => {
+  registrarSalario = async (id: number, salario: number) => {
     const body = {
-      amount: `${salario.toString().replace(".",",")} MXN`,
+      amount: `${salario.toString().replace(".", ",")} MXN`,
       frequency: "monthly",
-      end_at:new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0],
+      end_at: new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0],
       start_at: new Date().toISOString().split('T')[0]
-    }       
-    const { data } = await ApiBizneo.post(`/api/v1/users/${id}/salaries`,body);
+    }
+    const { data } = await ApiBizneo.post(`/api/v1/users/${id}/salaries`, body);
     return data;
   }
 
@@ -56,7 +57,7 @@ export class Bizneo {
   obtenerPersonalPorID = async (id: string) => {
     try {
       const { data } = await ApiBizneo.get<ResponseUser>(`/api/v1/users/${id}`);
-      return  data;
+      return data;
     } catch (error) {
       return { user: null };
     }
@@ -65,7 +66,7 @@ export class Bizneo {
 
   crearPersonal = async (
     request: CreateUserRequest
-  ): Promise<{ user?: User | null; mensaje: string }> => {    
+  ): Promise<{ user?: User | null; mensaje: string }> => {
     try {
       const { data } = await ApiBizneo.post<ResponseUser>(`/api/v1/users`, request);
       return { user: data.user, mensaje: "Usuario creado correctamente" };
@@ -101,12 +102,12 @@ export class Bizneo {
   }
 
   listarContratos = async (id_personalBizneo: number) => {
-    const  {data} = await ApiBizneo.get<Contrato[]>(`/api/v1/users/${id_personalBizneo}/work-contracts`);
+    const { data } = await ApiBizneo.get<Contrato[]>(`/api/v1/users/${id_personalBizneo}/work-contracts`);
     return data;
   }
 
 
-  
+
   eliminarContrato = async (id_personalBizneo: number, id_contrato: number) => {
     try {
       await ApiBizneo.delete(`/api/v1/users/${id_personalBizneo}/work-contracts/${id_contrato}`);
@@ -118,20 +119,32 @@ export class Bizneo {
   }
 
 
-  registrarContrato = async (id_personalBizneo: number,fechaContratacion:Date) => {
-    
-    try {      
+  registrarContrato = async (id_personalBizneo: number, fechaContratacion: Date) => {
+
+    try {
       await ApiBizneo.post(`/api/v1/users/${id_personalBizneo}/work-contracts`, {
-          start_at: fechaContratacion.toISOString().split('T')[0],          
-          end_at: null,
-          accumulate_seniority:false,
-          fte:1
+        start_at: fechaContratacion.toISOString().split('T')[0],
+        end_at: null,
+        accumulate_seniority: false,
+        fte: 1
       }
-       );
+      );
       return { procesado: true, mensaje: "Contrato registrado correctamente" };
     }
     catch (error: any) {
       return { procesado: false, mensaje: error.response!.data }
+    }
+  }
+
+
+
+  obtenerChecadas = async (id_personalBizneo: number, fechaInicio: Date, fechaFin: Date): Promise<{  checadas: LoggedTimeElement[] }> => {    
+    try {
+      const { data } = await ApiBizneo.get<ResponseChecadas>(`/api/v1/users/${id_personalBizneo}/logged-times?start_at=${fechaInicio.toISOString().split('T')[0]}&end_at=${fechaFin.toISOString().split('T')[0]}`);
+      return { checadas: data.logged_times };
+    }
+    catch (error: any) {
+      return {  checadas: [] };
     }
   }
 }

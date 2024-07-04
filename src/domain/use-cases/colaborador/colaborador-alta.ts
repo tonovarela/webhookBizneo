@@ -15,7 +15,7 @@ export class ColaboradorAlta  extends AbstractColaboradorUseCase {
         let resultado = []
         for (const colaborador of colaboradores) {
             const res = await this.procesarColaboradoresPendientes(colaborador)
-            if (res.procesado) {
+            if (res.se_procesa) {
                 const idBizneo = res.id_bizneo ?? 0;
                 await this.colaboradorService.procesarBitacora(colaborador.id_bitacora);
                 await this.colaboradorService.insertOrCreateUserBizneo(idBizneo, colaborador.personal);                
@@ -45,7 +45,7 @@ export class ColaboradorAlta  extends AbstractColaboradorUseCase {
                 personal,
                 id_bizneo: user.id,                
                 mensaje: 'Ya existe en Bizneo',
-                procesado: true,
+                se_procesa: true,
             };
         }
         const personalPendiente = await this.colaboradorService.detalleIntelisis(personal)
@@ -54,7 +54,7 @@ export class ColaboradorAlta  extends AbstractColaboradorUseCase {
                 personal,
                 id_bizneo: undefined,                
                 mensaje: 'No se encuentra registrado en Intelisis',
-                procesado: false,
+                se_procesa: false,
 
             };
         }
@@ -72,14 +72,14 @@ export class ColaboradorAlta  extends AbstractColaboradorUseCase {
                 personal,
                 id_bizneo: undefined,                
                 mensaje: JSON.stringify(mensaje),
-                procesado: false,
+                se_procesa: false,
             }
         }
         return {
             personal,
             id_bizneo:user.id,
             mensaje: 'Registrado en Bizneo',
-            procesado: true,
+            se_procesa: true,
         };
     }
 
